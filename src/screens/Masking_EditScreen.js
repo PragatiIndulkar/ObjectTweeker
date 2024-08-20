@@ -1,8 +1,8 @@
 import { Dimensions, Image, Modal, ScrollView, StatusBar, StyleSheet, PermissionsAndroid, Alert, Linking, Platform, Text, TextInput, TouchableOpacity, View, NativeModules } from 'react-native'
-import React, { useEffect, useState, Component } from 'react'
+import React, { useEffect, useState, Component, useRef } from 'react'
 import { useRoute } from '@react-navigation/native'
 import ButtonComponent from '../components/ButtonComponent'
-import { MASKING_EDITING_URL, MASKING_STEP, axiosClient } from '../utils/String'
+import { ENHANCE_PRMOPT_URL, MASKING_EDITING_URL, MASKING_STEP, axiosClient, axiosClientEnhancePrompt } from '../utils/String'
 import { Buffer } from 'buffer'
 import mime from 'mime'
 import { runAxiosAsync } from '../utils/helper'
@@ -10,6 +10,7 @@ import LoaderComponent from '../components/LoaderComponent'
 import Slider from '@react-native-community/slider'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import { PERMISSIONS, request, check, RESULTS } from 'react-native-permissions'
 import RNFS from 'react-native-fs'
@@ -17,6 +18,7 @@ import { CameraRoll } from '@react-native-camera-roll/camera-roll'
 import RNFetchBlob from 'rn-fetch-blob'
 import BeforeAfterSlider from '../components/BeforeAfterSliderComponent'
 import Share from 'react-native-share'
+import Entypo from 'react-native-vector-icons/Entypo'
 
 const Masking_EditScreen = ({ navigation }) => {
     const route = useRoute();
@@ -30,16 +32,56 @@ const Masking_EditScreen = ({ navigation }) => {
     const [wrongInputData, setWrongInputData] = useState('');
     const [outputBase64, setOutputBase64] = useState('');
     const [opacity, setOpacity] = useState(0.5);
+    const [openAdditional, setOpenAdditional] = useState(false)
+    const [strength, setStrength] = useState(0.5);
+    const [guidance_Scale, setGuidanceScale] = useState(20);
+    const [inferenace_scale, setInferenaceScale] = useState(100);
+    const [responses, setResponses] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const textInputRef = useRef(null);
 
-    const shareImage = async()=>{
-        const shareOptions ={
-            message: "Image after processing",
-           // url: outputImage,//to share single file image
-            urls:[outputImage]// to share multiple image files
+
+    const handleNext = () => {
+        if (currentIndex < responses.length - 1) {
+            setCurrentIndex(currentIndex + 1);
         }
-        try{
-            const shareResponse =await Share.open(shareOptions)
-        }catch(error){
+    };
+
+    const handlePrevious = () => {
+        if (currentIndex > 0) {
+            setCurrentIndex(currentIndex - 1);
+        }
+    };
+
+    const handleTextInputChange = (txt) => {
+        setObjectDataToChangeWith(txt);
+
+        // Update or add the current response with the new input text
+        let updatedResponses = [...responses];
+        updatedResponses[currentIndex] = txt;
+        setResponses(updatedResponses);
+        if (textInputRef.current) {
+            textInputRef.current.setNativeProps({ selection: { start: 0, end: 0 } });
+        }
+    };
+
+    useEffect(() => {
+        // Update the TextInput field when currentIndex changes
+        if (responses.length > 0) {
+            setObjectDataToChangeWith(responses[currentIndex]);
+        }
+    }, [currentIndex]);
+
+
+    const shareImage = async () => {
+        const shareOptions = {
+            message: "Image after processing",
+            // url: outputImage,//to share single file image
+            urls: [outputImage]// to share multiple image files
+        }
+        try {
+            const shareResponse = await Share.open(shareOptions)
+        } catch (error) {
             console.log("sharing error", error)
         }
 
@@ -57,6 +99,21 @@ const Masking_EditScreen = ({ navigation }) => {
         return { fileType, fileName };
     };
     useEffect(() => {
+        if (outputImagePath) {
+            Image.getSize(
+                `file://${outputImagePath}`,
+                (width, height) => {
+                    const screenWidth = Dimensions.get('window').width / 2;
+                    const scaleFactor = width / screenWidth;
+                    const imageHeight = height / scaleFactor;
+                    console.log("image width height is in edit", screenWidth, imageHeight)
+                    setImageSize({ width: screenWidth, height: imageHeight });
+                },
+                (error) => {
+                    console.error(`Couldn't get the image size: ${error.message}`);
+                }
+            );
+        }
         if (imageData?.assets[0]?.uri) {
             Image.getSize(
                 imageData.assets[0].uri,
@@ -84,7 +141,6 @@ const Masking_EditScreen = ({ navigation }) => {
         }
         const { fileType, fileNameInput } = getFileTypeAndName(imageData.assets[0].uri);
         console.log(imageData.assets[0].uri)
-        console.log(outputImagePath)
         const { fileTypeoutput, fileNameOutput } = getFileTypeAndName(outputImagePath);
         console.log(fileNameInput)
         console.log(fileNameOutput)
@@ -107,17 +163,18 @@ const Masking_EditScreen = ({ navigation }) => {
         );
         formData.append('image_prompt', objectDataToChangeWith); // Assuming this is a string value
         console.log(formData)
-        const response = await runAxiosAsync(axiosClient.post(MASKING_EDITING_URL, formData, {
+        const Masking_Edit_API = `${MASKING_EDITING_URL}?strength=${strength}&guidance_scale=${guidance_Scale}&num_inference_steps=${inferenace_scale}`;
+        const response = await runAxiosAsync(axiosClient.post(Masking_Edit_API, formData, {
             headers: {
                 //'Accept': 'application/json',
                 'Content-Type': 'multipart/form-data',
             },
             responseType: 'arraybuffer'
         }))
-        console.log("response is",response)
+        console.log("response is", response)
         const base64string = Buffer.from(response, 'binary').toString('base64')
-        console.log("base64string is",base64string)
-       
+        console.log("base64string is", base64string)
+
         setOutputBase64(base64string)
         const image = `data:image/jpeg;base64,${base64string}`
         // const imagePath = `${RNFS.DownloadDirectoryPath}/${new Date().getTime()}.jpg`;
@@ -275,7 +332,7 @@ const Masking_EditScreen = ({ navigation }) => {
     const validate = () => {
         let isValid = false;
         if (objectDataToChangeWith == '') {
-            setWrongInputData("Please Enter object to change")
+            setWrongInputData("* Please Enter object to change")
             isValid = false
         }
         else {
@@ -284,8 +341,22 @@ const Masking_EditScreen = ({ navigation }) => {
         }
         return isValid;
     }
+    const callEnhancePromptAPI = async () => {
+        setLoading(true)
+        const res = await runAxiosAsync(axiosClientEnhancePrompt.post(ENHANCE_PRMOPT_URL, objectDataToChangeWith, {
+            headers: {
+                // 'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            //responseType:'string'
+        }))
+        console.log("response is", res)
+        setResponses([...responses, res]);
+        setCurrentIndex(responses.length);
+        setLoading(false)
+    }
     return (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }}>
             <View style={styles.main}>
                 <StatusBar
                     barStyle='dark-content'
@@ -304,14 +375,28 @@ const Masking_EditScreen = ({ navigation }) => {
                         style={[styles.overlayimage, { opacity }]}
                     />
                 </View>
-                <View>
+                <View style={{width:"100%"}}>
                     <Text style={styles.imageText}>Image Object to replace with</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', position:'absolute', top:40,right:20}} >
+                        <TouchableOpacity onPress={handlePrevious} disabled={currentIndex === 0}>
+                            <Entypo name={'chevron-left'} size={15} />
+                        </TouchableOpacity>
+                        {objectDataToChangeWith == '' ? <Text>0/0</Text> : <Text>{`${currentIndex + 1}/${responses.length}`}</Text>}
+
+                        <TouchableOpacity onPress={handleNext} disabled={currentIndex === responses.length - 1}>
+                            <Entypo name={'chevron-right'} size={15} />
+                        </TouchableOpacity>
+                    </View>
                     <TextInput style={styles.textInput}
                         placeholderTextColor={'gray'}
-                        onChangeText={txt => setObjectDataToChangeWith(txt)}
+                        onChangeText={txt => handleTextInputChange(txt)}
+                        value={objectDataToChangeWith}
                         placeholder='Enter image object to change'
-                        isValid={wrongInputData == '' ? true : false} />
+                        isValid={wrongInputData == '' ? true : false}
+                        multiline={true}
+                        scrollEnabled={true} />
                 </View>
+                {wrongInputData != "" && <Text style={styles.errorText}>{wrongInputData}</Text>}
                 <View>
                     <Text style={styles.imageText}>Overlay Opacity</Text>
                     <Slider
@@ -325,12 +410,87 @@ const Masking_EditScreen = ({ navigation }) => {
                         thumbTintColor="gray"
                     />
                 </View>
-                {wrongInputData != "" && <Text style={styles.errorText}>{wrongInputData}</Text>}
-                <ButtonComponent name='Apply Replacement' OnPress={() => {
+                <View>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={styles.imageText}>Additional specifications</Text>
+                        <TouchableOpacity style={{ alignItems: 'center', justifyContent: 'center', marginTop: 20, marginLeft: 10 }} onPress={() => { openAdditional ? setOpenAdditional(false) : setOpenAdditional(true) }}>
+                            {
+                                openAdditional ?
+                                    <Entypo name={'chevron-up'} size={30} color={'#08046c'} />
+                                    : <Entypo name={'chevron-down'} size={30} color={'#08046c'} />
+                            }
+
+                        </TouchableOpacity>
+                    </View>
+                    {openAdditional &&
+                        (<View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 30 }}>
+                                <Text style={{color:'gray'}}>Strength</Text>
+                                <Slider
+                                    style={[styles.Anothersliders, { marginLeft: 50 }]}
+                                    minimumValue={0}
+                                    maximumValue={1}
+                                    value={strength}
+                                    onValueChange={setStrength}
+                                    minimumTrackTintColor="#4600a3"
+                                    maximumTrackTintColor="#0f0f0f"
+                                    thumbTintColor="gray"
+                                />
+                                <Text style={{color:'gray'}}>{strength}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 30 }}>
+                                <Text style={{color:'gray'}}>Guidance Scale</Text>
+                                <Slider
+                                    style={[styles.Anothersliders, { marginLeft: 8 }]}
+                                    minimumValue={0}
+                                    maximumValue={30}
+                                    value={guidance_Scale}
+                                    onValueChange={setGuidanceScale}
+                                    minimumTrackTintColor="#4600a3"
+                                    maximumTrackTintColor="#0f0f0f"
+                                    thumbTintColor="gray"
+                                />
+                                <Text style={{color:'gray'}}>{guidance_Scale}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 30 }}>
+                                <Text style={{color:'gray'}}>Inferenace Scale</Text>
+                                <Slider
+                                    style={[styles.Anothersliders, { marginLeft: 10 }]}
+                                    minimumValue={50}
+                                    maximumValue={500}
+                                    value={inferenace_scale}
+                                    onValueChange={(value) => setInferenaceScale(Math.round(value))}
+                                    minimumTrackTintColor="#4600a3"
+                                    maximumTrackTintColor="#0f0f0f"
+                                    thumbTintColor="gray"
+                                />
+                                <Text style={{color:'gray'}}>{inferenace_scale}</Text>
+                            </View>
+                        </View>
+                        )
+                    }
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between',width:'100%' }}>
+                    <TouchableOpacity style={[styles.buttonStyle, { marginLeft:10, backgroundColor: '#ededed', borderColor: 'gray' }]} onPress={() => {
+                        if (validate()) {
+                            callEnhancePromptAPI()
+                        }
+                    }}>
+                        <Text style={{ color: '#08046c', fontSize: 17, fontWeight: '600' }}>Enhance Prompt</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.buttonStyle, { marginRight: 10, backgroundColor: '#4600a3', borderColor: 'gray' }]} onPress={() => {
+                        if (validate()) {
+                            callMaskEditAPI()
+                        }
+                    }}>
+                        <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Apply Mask</Text>
+                    </TouchableOpacity>
+                </View>
+                {/* <ButtonComponent name='Apply Replacement' OnPress={() => {
                     if (validate()) {
                         callMaskEditAPI()
                     }
-                }} />
+                }} /> */}
                 {
                     apiCalled && loading != true &&
                     (
@@ -356,15 +516,31 @@ const Masking_EditScreen = ({ navigation }) => {
                                                     />
                                                     {/* <Image style={styles.selectedImage} source={{ uri: outputImage }} /> */}
                                                     <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginTop: 30 }}>
-                                                        <TouchableOpacity style={[styles.btn, { marginRight: 10 }]} onPress={() => downloadImage()}>
-                                                            <MaterialIcons name="save-alt" size={30} color={'white'} />
-                                                        </TouchableOpacity>
-                                                        <TouchableOpacity style={[styles.btn, { marginLeft: 5, marginRight: 5 }]} onPress={()=>shareImage()}>
-                                                            <AntDesign name="sharealt" size={30} color={'white'} />
-                                                        </TouchableOpacity>
-                                                        <TouchableOpacity style={[styles.btn, { marginLeft: 10, marginRight: 5 }]}>
-                                                            <MaterialCommunityIcons name="image-edit-outline" size={30} color={'white'} />
-                                                        </TouchableOpacity>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <TouchableOpacity style={[styles.btn, { marginRight: 10 }]} onPress={() => downloadImage()}>
+                                                                <MaterialIcons name="save-alt" size={30} color={'white'} />
+                                                            </TouchableOpacity>
+                                                            <Text style={{ fontSize: 15, marginTop: 5 }}>Save</Text>
+                                                        </View>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <TouchableOpacity style={[styles.btn, { marginLeft: 10, marginRight: 5 }]} onPress={() => shareImage()}>
+                                                                <AntDesign name="sharealt" size={30} color={'white'} />
+                                                            </TouchableOpacity>
+                                                            <Text style={{ fontSize: 15, marginTop: 5 }}>Share</Text>
+                                                        </View>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <TouchableOpacity style={[styles.btn, { marginLeft: 15, marginRight: 5 }]}>
+                                                                <MaterialCommunityIcons name="image-edit-outline" size={30} color={'white'} />
+                                                            </TouchableOpacity>
+                                                            <Text style={{ fontSize: 15, marginTop: 5 }}>Edit</Text>
+                                                        </View>
+                                                        <View style={{ alignItems: 'center' }}>
+                                                            <TouchableOpacity style={[styles.btn, { marginLeft: 10 }]} onPress={() => callMaskEditAPI()}>
+                                                                <FontAwesome name="repeat" size={25} color={'white'} />
+                                                            </TouchableOpacity>
+                                                            <Text style={{ fontSize: 15, marginTop: 5 }}>Retry</Text>
+                                                        </View>
+
                                                     </View>
                                                     <TouchableOpacity style={styles.CloseBtn} onPress={() => closeModal()}>
                                                         <Text style={styles.CloseTxt}>Close</Text>
@@ -399,7 +575,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
         alignSelf: 'center',
         position: 'relative',
-        backgroundColor: 'blue'
+        //backgroundColor: 'blue'
     },
     backgroundimage: {
         width: '100%',
@@ -461,7 +637,7 @@ const styles = StyleSheet.create({
     },
     textInput: {
         width: '90%',
-        height: 50,
+        height: 60,
         borderWidth: 1,
         borderRadius: 10,
         marginTop: 20,
@@ -510,6 +686,13 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginLeft: 10
     },
+    Anothersliders: {
+        width: '50%',
+        height: 40,
+        //transform: [{ scaleY: 1 }],
+        marginTop: 10,
+        marginLeft: 10
+    },
     btn: {
         width: 70,
         height: 70,
@@ -540,5 +723,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#08046c',
         fontWeight: '500'
-    }
+    },
+    buttonStyle: {
+        width: "45%",
+        height: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 30,
+        borderRadius: 10,
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 4,
+        marginBottom: 10
+      },
+      scrollView: {
+        width: '100%',
+        alignSelf: 'center',
+      },
 })

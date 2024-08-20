@@ -68,7 +68,7 @@ export default function OnBoardingScreen({ navigation }) {
             slideRef.current.scrollToIndex({ index: currentIndex + 1 });
         }
         else {
-            navigation.navigate('Home')
+            navigation.navigate('OptionSelectionScreen')
             console.log('LastPage')
         }
     }
@@ -77,7 +77,7 @@ export default function OnBoardingScreen({ navigation }) {
             slideRef.current.scrollToIndex({ index: OnBoardingData.length - 1 });
         }
         else {
-            navigation.navigate('Home')
+            navigation.navigate('OptionSelectionScreen')
             console.log('LastPage')
         }
     }

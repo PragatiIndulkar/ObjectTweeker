@@ -12,6 +12,8 @@ import OptionModalComponent from '../components/OptionModalComponent';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import OptionSelectionScreen from '../screens/OptionSelectionScreen';
+import EditOptionsComponent from '../components/EditOptionsComponent';
 const stack = createStackNavigator();
 
 const HeaderRight = () => {
@@ -35,6 +37,12 @@ const MainNavigator = () => {
         <stack.Navigator>
           <stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
           <stack.Screen name="MainScreen" component={MainScreen} options={{ headerShown: false }} />
+          <stack.Screen name="OptionSelectionScreen" component={OptionSelectionScreen} options={{
+              title: 'ObjectTweeker',
+              headerTintColor: "#08046c",
+              headerRight: () => <HeaderRight />
+            }}/>
+            <stack.Screen name="EditOptionsComponent" component={EditOptionsComponent} options={{ headerShown: false }}/>
           <stack.Screen name="Home" component={Home}
             options={{
               title: '',

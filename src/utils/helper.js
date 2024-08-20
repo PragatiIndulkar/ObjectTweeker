@@ -8,7 +8,6 @@ export const runAxiosAsync = async (promise) => {
         return response.data;
     } catch (error) {
         let message = error.message;
-
         if (axios.isAxiosError(error)) {
             console.log("This is an instance of AxiosError", error.response);
             const response = error.response;

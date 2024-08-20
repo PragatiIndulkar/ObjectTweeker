@@ -1,17 +1,23 @@
 import { View, Text, StyleSheet, TouchableOpacity, PermissionsAndroid, Image, TextInputComponent, TextInput, StatusBar, Dimensions, ScrollView, Modal, TouchableWithoutFeedback, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import ButtonComponent from '../components/ButtonComponent'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
-import { BASE_URL, MASKING_STEP, axiosClient } from '../utils/String'
+import { BASE_URL, ENHANCE_PRMOPT_URL, MASKING_STEP, axiosClient, axiosClientEnhancePrompt } from '../utils/String'
 import { Buffer } from 'buffer'
 import mime from 'mime'
 import { runAxiosAsync } from '../utils/helper'
 import LoaderComponent from '../components/LoaderComponent'
 import RNFS, { uploadFiles } from 'react-native-fs'
 import { useDispatch, useSelector } from 'react-redux'
+import { useRoute } from '@react-navigation/native'
+import EditOptionsComponent from '../components/EditOptionsComponent'
+import Entypo from 'react-native-vector-icons/Entypo'
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
+  const route = useRoute();
+  const { isDrawTrue } = route.params
   const [imageData, setImageData] = useState();
   const [error, setError] = useState(null);
   const [outputImage, setOutputImage] = useState();
@@ -22,7 +28,42 @@ const Home = ({ navigation }) => {
   const [wrongImageSelection, setWrongImageSelection] = useState('');
   const [modalVisibility, setModalVisibility] = useState(false);
   const dispatch = useDispatch();
-  
+  const [responses, setResponses] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const textInputRef = useRef(null);
+
+
+  const handleNext = () => {
+    if (currentIndex < responses.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const handleTextInputChange = (txt) => {
+    setImageObjectData(txt);
+
+    // Update or add the current response with the new input text
+    let updatedResponses = [...responses];
+    updatedResponses[currentIndex] = txt;
+    setResponses(updatedResponses);
+    if (textInputRef.current) {
+      textInputRef.current.setNativeProps({ selection: { start: 0, end: 0 } });
+    }
+  };
+
+  useEffect(() => {
+    // Update the TextInput field when currentIndex changes
+    if (responses.length > 0) {
+      setImageObjectData(responses[currentIndex]);
+    }
+  }, [currentIndex]);
+
   const openModal = () => {
     setModalVisibility(true)
   }
@@ -40,6 +81,7 @@ const Home = ({ navigation }) => {
     const res = await launchImageLibrary({ mediaType: 'photo' })
     if (!res.didCancel) {
       setImageData(res);
+      console.log("imageData", res)
     }
     setModalVisibility(false)
   }
@@ -83,18 +125,17 @@ const Home = ({ navigation }) => {
       },
       responseType: 'arraybuffer'
     }))
-    console.log("response is",res)
-    if(res != 400){
+    console.log("response is", res)
+    if (res != 400) {
       const base64string = Buffer.from(res, 'binary').toString('base64')
       const image = `data:image/jpeg;base64,${base64string}`
-      console.log(image)
       const imagePath = `${RNFS.DocumentDirectoryPath}/${new Date().getTime()}.jpg`;
       await RNFS.writeFile(imagePath, base64string, 'base64');
       setOutputImage(image)
       setLoading(false)
       navigation.navigate('Masking_EditScreen', { outputImagePath: imagePath, imageData: imageData })
     }
-    else{
+    else {
       setLoading(false)
       Alert.alert("The AI is unable to detect the object you want to mask.")
     }
@@ -137,8 +178,35 @@ const Home = ({ navigation }) => {
     }
     return isValid
   }
+  const validatePrompt = () => {
+    let isValid = false;
+    if (imageObjectData == '') {
+      setWrongInput('* Please Enter object name')
+      isValid = false
+    }
+    else {
+      setWrongInput('')
+      isValid = true
+    }
+    return isValid
+  }
+  const callEnhancePromptAPI = async () => {
+    setLoading(true)
+    const res = await runAxiosAsync(axiosClientEnhancePrompt.post(ENHANCE_PRMOPT_URL, imageObjectData, {
+      headers: {
+        // 'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      //responseType:'string'
+    }))
+    console.log("response is", res)
+    setResponses([...responses, res]);
+    setCurrentIndex(responses.length);
+    setLoading(false)
+  }
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={styles.main}>
         <StatusBar
           barStyle='dark-content'
@@ -158,7 +226,8 @@ const Home = ({ navigation }) => {
           }
           {imageData != null &&
             (
-              <TouchableWithoutFeedback onPress={()=>openModal()}>
+              <TouchableWithoutFeedback onPress={() => openModal()}>
+
                 <Image style={styles.selectedImage} source={{ uri: imageData.assets[0].uri }} />
               </TouchableWithoutFeedback>
             )
@@ -175,14 +244,22 @@ const Home = ({ navigation }) => {
         </TouchableOpacity>
       </View> */}
         {wrongImageSelection != "" && <Text style={styles.errorText}>{wrongImageSelection}</Text>}
-
-        <Text style={[styles.imageText, { marginTop: 20 }]}>Specify Object</Text>
-        <TextInput style={styles.textInput}
-          onChangeText={txt => setImageObjectData(txt)}
-          placeholder='Enter image name'
-          placeholderTextColor={'gray'}
-          isValid={wrongInput == '' ? true : false} />
-        {wrongInput != "" && <Text style={styles.errorText}>{wrongInput}</Text>}
+        {!isDrawTrue && <View>
+          <Text style={[styles.imageText, { marginTop: 20 }]}>Specify Object</Text>
+          <TextInput
+          style={styles.textInput}
+            onChangeText={txt =>setImageObjectData(txt)}
+            value={imageObjectData}
+            placeholder='Enter image name'
+            placeholderTextColor={'gray'}
+            isValid={wrongInput == '' ? true : false} 
+        />
+           
+          {wrongInput != "" && <Text style={styles.errorText}>{wrongInput}</Text>}
+        </View>}
+        {isDrawTrue && imageData != null &&
+          <EditOptionsComponent />
+        }
         <ButtonComponent name='Apply Mask' OnPress={() => {
           if (validateInput()) {
             callAPI()
@@ -272,7 +349,7 @@ const styles = StyleSheet.create({
     // flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding:'40%'
+    padding: '40%'
   },
   innerView: {
     flexDirection: 'row',
@@ -321,7 +398,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     width: '90%',
-    height: 50,
+    height: 60,
     borderWidth: 1,
     borderRadius: 10,
     marginTop: 20,
@@ -358,5 +435,26 @@ const styles = StyleSheet.create({
     // shadowRadius: 4,
     // elevation: 5,
   },
-
+  buttonStyle: {
+    width: 170,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    borderRadius: 10,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+    marginBottom: 10
+  },
+  scrollView: {
+    width: '100%',
+    alignSelf: 'center',
+  },
 })
