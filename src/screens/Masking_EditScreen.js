@@ -483,7 +483,7 @@ const Masking_EditScreen = ({ navigation }) => {
                             callMaskEditAPI()
                         }
                     }}>
-                        <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Apply Mask</Text>
+                        <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Replace</Text>
                     </TouchableOpacity>
                 </View>
                 {/* <ButtonComponent name='Apply Replacement' OnPress={() => {

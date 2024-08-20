@@ -28,34 +28,6 @@ const Home = ({ navigation }) => {
   const [wrongImageSelection, setWrongImageSelection] = useState('');
   const [modalVisibility, setModalVisibility] = useState(false);
   const dispatch = useDispatch();
-  const [responses, setResponses] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const textInputRef = useRef(null);
-
-
-  const handleNext = () => {
-    if (currentIndex < responses.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const handleTextInputChange = (txt) => {
-    setImageObjectData(txt);
-
-    // Update or add the current response with the new input text
-    let updatedResponses = [...responses];
-    updatedResponses[currentIndex] = txt;
-    setResponses(updatedResponses);
-    if (textInputRef.current) {
-      textInputRef.current.setNativeProps({ selection: { start: 0, end: 0 } });
-    }
-  };
 
   useEffect(() => {
     // Update the TextInput field when currentIndex changes
@@ -178,33 +150,6 @@ const Home = ({ navigation }) => {
     }
     return isValid
   }
-  const validatePrompt = () => {
-    let isValid = false;
-    if (imageObjectData == '') {
-      setWrongInput('* Please Enter object name')
-      isValid = false
-    }
-    else {
-      setWrongInput('')
-      isValid = true
-    }
-    return isValid
-  }
-  const callEnhancePromptAPI = async () => {
-    setLoading(true)
-    const res = await runAxiosAsync(axiosClientEnhancePrompt.post(ENHANCE_PRMOPT_URL, imageObjectData, {
-      headers: {
-        // 'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      //responseType:'string'
-    }))
-    console.log("response is", res)
-    setResponses([...responses, res]);
-    setCurrentIndex(responses.length);
-    setLoading(false)
-  }
-
   return (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={styles.main}>
