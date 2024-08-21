@@ -12,7 +12,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useRoute } from '@react-navigation/native'
 import EditOptionsComponent from '../components/EditOptionsComponent'
 import Entypo from 'react-native-vector-icons/Entypo'
-
+import ImageResizer from 'react-native-image-resizer';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
@@ -23,18 +23,19 @@ const Home = ({ navigation }) => {
   const [outputImage, setOutputImage] = useState();
   const [imageObjectData, setImageObjectData] = useState('');
   const [loading, setLoading] = useState(false)
+  const [loaderText,setLoaderText] = useState('Fetching Response...')
   const imageUri = useSelector(state => state.image.imageUri)
   const [wrongInput, setWrongInput] = useState('');
   const [wrongImageSelection, setWrongImageSelection] = useState('');
   const [modalVisibility, setModalVisibility] = useState(false);
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    // Update the TextInput field when currentIndex changes
-    if (responses.length > 0) {
-      setImageObjectData(responses[currentIndex]);
-    }
-  }, [currentIndex]);
+  // useEffect(() => {
+  //   // Update the TextInput field when currentIndex changes
+  //   if (responses.length > 0) {
+  //     setImageObjectData(responses[currentIndex]);
+  //   }
+  // }, [currentIndex]);
 
   const openModal = () => {
     setModalVisibility(true)
@@ -43,12 +44,20 @@ const Home = ({ navigation }) => {
     setModalVisibility(false);
   }
   const openCamera = async () => {
-    const res = await launchCamera({ mediaType: 'photo' })
+    const res = await launchCamera({ mediaType: 'photo' });
     if (!res.didCancel) {
-      setImageData(res);
+        const rotatedImage = await ImageResizer.createResizedImage(
+            res.assets[0].uri,
+            res.assets[0].width,
+            res.assets[0].height,
+            'JPEG',
+            100,
+            0 // Rotate image by 0 degrees, which automatically corrects orientation
+        );
+        setImageData({ assets: [{ ...res.assets[0], uri: rotatedImage.uri }] });
     }
-    setModalVisibility(false)
-  }
+    setModalVisibility(false);
+}
   const openGallery = async () => {
     const res = await launchImageLibrary({ mediaType: 'photo' })
     if (!res.didCancel) {
@@ -72,6 +81,7 @@ const Home = ({ navigation }) => {
 
   const callAPI = async () => {
     setLoading(true)
+    setLoaderText("Applying Mask...")
     if (!imageData) {
       setError('No image selected');
       return;
@@ -249,7 +259,7 @@ const Home = ({ navigation }) => {
 
           </View>
         )}
-        <LoaderComponent visible={loading} />
+        <LoaderComponent visible={loading} loaderText={loaderText}/>
       </View>
     </ScrollView>
   )

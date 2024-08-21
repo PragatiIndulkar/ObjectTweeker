@@ -69,13 +69,14 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
     
     return (
         <View style={styles.main}>
-            <View style={styles.container}>
+                <View style={styles.container}>
+
                 {/* Before Image on the left */}
-                <View style={{ width: position - 5, overflow: 'hidden' }}>
+                <View style={{ width: position - 5,overflow: 'hidden' }}>
                     <Image
                         source={{ uri: beforeImage }}
                         style={[styles.image, { marginLeft: 0 }]}
-                    />
+                        />
                 </View>
 
                 {/* After Image on the right */}
@@ -83,7 +84,7 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
                     <Image
                         source={{ uri: afterImage }}
                         style={[styles.image, { marginLeft: - position - 5}]}
-                    />
+                        />
                 </View>
 
                 {/* Slider Handle */}
@@ -91,7 +92,7 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
                 <View
                     style={[styles.slider, { left: position - 15 }]}
                     {...panResponder.panHandlers}
-                >
+                    >
                     <View style={styles.sliderHandle}>
                         <Text style={styles.Beforetext}>Before</Text>
                         <AntDesign style={styles.arrow} name={'caretleft'} size={15} />

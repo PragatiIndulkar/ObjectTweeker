@@ -1,15 +1,14 @@
 import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import LottieView from 'lottie-react-native'
 
-const LoaderComponent = ({ visible }) => {
+const LoaderComponent = ({ visible , loaderText}) => {
     return (
         // <View style={[StyleSheet.absoluteFillObject, styles.mainView]}>
         //     <LottieView style={styles.lottieV} source={require('../image/loading.json')} autoPlay loop resizeMode='cover'/>
         // </View>
         <Modal transparent visible={visible}>
             <View style={styles.mainView}>
-                <Text style={styles.text}>Fetching Response...</Text>
+                <Text style={styles.text}>{loaderText}</Text>
                 <ActivityIndicator size='large' style={{ transform: [{ scaleX: 1.5 }, { scaleY: 1.5 }] }} color={"#4600a3"} />
                 {/* <View style={styles.loaderView}>
                 </View> */}
@@ -23,10 +22,10 @@ export default LoaderComponent
 const styles = StyleSheet.create({
     mainView: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.7)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
         justifyContent: 'center',
         alignItems: 'center',
-        //  zIndex: 1
+        //zIndex: 1
     },
     lottieV: {
         flex: 1,
