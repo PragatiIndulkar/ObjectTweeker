@@ -10,18 +10,31 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
     const [resizedBeforeImage, setResizedBeforeImage] = useState(null);
     useEffect(() => {
         if (beforeImage) {
-            Image.getSize(
-                beforeImage,
-                (width, height) => {
-                    const screenWidth = Dimensions.get('window').width / 2;
-                    const scaleFactor = width / screenWidth;
-                    const imageHeight = height / scaleFactor;
-                    setImageSize({ width: screenWidth, height: imageHeight });
-                },
-                (error) => {
-                    console.error(`Couldn't get the image size: ${error.message}`);
-                }
-            );
+            Image.getSize(beforeImage, (width, height) => {
+                console.log(`Image width: ${width}, Image height: ${height}`);
+                
+                // Use the width and height to calculate aspect ratio or set state
+                const aspectRatio = width / height;
+                const screenWidth = Dimensions.get('window').width;
+                const adjustedHeight = screenWidth / aspectRatio;
+            
+                // Example: Set image size state
+                setImageSize({ width: screenWidth, height: adjustedHeight });
+              }, (error) => {
+                console.error(`Couldn't get the image size: ${error.message}`);
+              });
+            // Image.getSize(
+            //     beforeImage,
+            //     (width, height) => {
+            //         const screenWidth = Dimensions.get('window').width / 2;
+            //         const scaleFactor = width / screenWidth;
+            //         const imageHeight = height / scaleFactor;
+            //         setImageSize({ width: screenWidth, height: imageHeight });
+            //     },
+            //     (error) => {
+            //         console.error(`Couldn't get the image size: ${error.message}`);
+            //     }
+            // );
         }
     }, [beforeImage]);
     // useEffect(() => {
@@ -69,7 +82,7 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
     
     return (
         <View style={styles.main}>
-                <View style={styles.container}>
+                <View style={[styles.container,{width:imageSize.width,height:imageSize.height}]}>
 
                 {/* Before Image on the left */}
                 <View style={{ width: position - 5,overflow: 'hidden' }}>
@@ -94,11 +107,11 @@ const BeforeAfterSlider = ({ beforeImage, afterImage }) => {
                     {...panResponder.panHandlers}
                     >
                     <View style={styles.sliderHandle}>
-                        <Text style={styles.Beforetext}>Before</Text>
                         <AntDesign style={styles.arrow} name={'caretleft'} size={15} />
                         <AntDesign style={styles.arrow} name={'caretright'} size={15} />
-                       <Text style={styles.Aftertext}>After</Text>
                     </View>
+                        <Text style={styles.Beforetext}>Before</Text>
+                       <Text style={styles.Aftertext}>After</Text>
                 </View>
             </View>
         </View>
@@ -144,8 +157,8 @@ const styles = StyleSheet.create({
     },
     Beforetext:{
         position:'absolute',
-        bottom:110,
-        right:35,
+        bottom:10,
+        right:30,
         textAlign:'center',
         padding:5,
         fontSize:11,
@@ -158,8 +171,8 @@ const styles = StyleSheet.create({
     },
     Aftertext:{
         position:'absolute',
-        bottom:110,
-        left:35,
+        bottom:10,
+        left:30,
         textAlign:'center',
         padding:5,
         fontSize:11,

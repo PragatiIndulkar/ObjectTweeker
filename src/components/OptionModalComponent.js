@@ -17,7 +17,8 @@ const OptionModalComponent = () => {
                 <View style={styles.modalBackground}>
                     <TouchableWithoutFeedback>
                         <View style={styles.modalContainer}>
-                            <TouchableOpacity style={styles.modalInner} onPress={
+                            <TouchableOpacity style={styles.modalInner}
+                            onPress={
                                 () => {
                                     hideModal(),
                                         navigation.navigate('ProfileScreen')

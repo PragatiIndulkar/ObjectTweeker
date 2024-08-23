@@ -5,9 +5,9 @@ import { Provider } from 'react-redux'
 import Mystore from './src/redux/store'
 const App = () => {
   return (
-    <Provider store={Mystore}>
+     <Provider store={Mystore} >
       <MainNavigator />
-    </Provider>
+     </Provider>
 
   )
 }

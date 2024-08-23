@@ -1,4 +1,4 @@
-import { Dimensions, Image, Modal, ScrollView, StatusBar, StyleSheet, PermissionsAndroid, Alert, Linking, Platform, Text, TextInput, TouchableOpacity, View, NativeModules } from 'react-native'
+import { Dimensions, Image, Modal, ScrollView, StatusBar, StyleSheet, PermissionsAndroid, Alert, Linking, Platform, Text, TextInput, TouchableOpacity, View, NativeModules, ImageBackground } from 'react-native'
 import React, { useEffect, useState, Component, useRef } from 'react'
 import { useRoute } from '@react-navigation/native'
 import ButtonComponent from '../components/ButtonComponent'
@@ -31,6 +31,7 @@ const Masking_EditScreen = ({ navigation }) => {
     const [apiCalled, setApiCalled] = useState(false)
     const [modalVisibility, setModalVisibility] = useState(false)
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+    const [outputImageSize, setoutputImageSize] = useState({ width: 0, height: 0 });
     const [wrongInputData, setWrongInputData] = useState('');
     const [outputBase64, setOutputBase64] = useState('');
     const [opacity, setOpacity] = useState(0.5);
@@ -101,33 +102,35 @@ const Masking_EditScreen = ({ navigation }) => {
     };
     useEffect(() => {
         if (outputImagePath) {
-            Image.getSize(
-                `file://${outputImagePath}`,
-                (width, height) => {
-                    const screenWidth = Dimensions.get('window').width / 2;
-                    const scaleFactor = width / screenWidth;
-                    const imageHeight = height / scaleFactor;
-                    console.log("image width height is in edit", screenWidth, imageHeight)
-                    setImageSize({ width: screenWidth, height: imageHeight });
-                },
-                (error) => {
-                    console.error(`Couldn't get the image size: ${error.message}`);
-                }
-            );
+            Image.getSize(`file://${outputImagePath}`, (width, height) => {
+                console.log(`Image width: ${width}, Image height: ${height}`);
+                
+                // Use the width and height to calculate aspect ratio or set state
+                const aspectRatio = width / height;
+                const screenWidth = Dimensions.get('window').width;
+                const adjustedHeight = screenWidth / aspectRatio;
+            
+                console.log("output image", screenWidth,adjustedHeight)
+                // Example: Set image size state
+                setoutputImageSize({ width: screenWidth, height: adjustedHeight });
+              }, (error) => {
+                console.error(`Couldn't get the image size: ${error.message}`);
+              });
         }
         if (imageData?.assets[0]?.uri) {
-            Image.getSize(
-                imageData.assets[0].uri,
-                (width, height) => {
-                    const screenWidth = Dimensions.get('window').width / 2;
-                    const scaleFactor = width / screenWidth;
-                    const imageHeight = height / scaleFactor;
-                    setImageSize({ width: screenWidth, height: imageHeight });
-                },
-                (error) => {
-                    console.error(`Couldn't get the image size: ${error.message}`);
-                }
-            );
+            Image.getSize(imageData?.assets[0]?.uri, (width, height) => {
+                console.log(`Image width: ${width}, Image height: ${height}`);
+                
+                // Use the width and height to calculate aspect ratio or set state
+                const aspectRatio = width / height;
+                const screenWidth = Dimensions.get('window').width;
+                const adjustedHeight = screenWidth / aspectRatio;
+                console.log("input image", screenWidth,adjustedHeight)
+                // Example: Set image size state
+                setImageSize({ width: screenWidth, height: adjustedHeight });
+              }, (error) => {
+                console.error(`Couldn't get the image size: ${error.message}`);
+              });
         }
     }, [imageData]);
     closeModal = () => {
@@ -373,15 +376,16 @@ const Masking_EditScreen = ({ navigation }) => {
                 {/* <TouchableOpacity onPress={() => { navigation.navigate('Home') }}>
                 <Text style={styles.backText}>Back</Text>
             </TouchableOpacity> */}
-                <View style={[styles.imageView, { width: imageSize.width, height: imageSize.height }]}>
-                    <Image
+                <View style={[styles.imageView, { width: imageSize.width-10, height: imageSize.height -10}]}>
+                    <ImageBackground
                         source={{ uri: imageData.assets[0].uri }}
                         style={styles.backgroundimage}
-                    />
+                    >
                     <Image
                         source={{ uri: `file://${outputImagePath}` }}
                         style={[styles.overlayimage, { opacity }]}
                     />
+                    </ImageBackground>
                 </View>
                 <View style={{ width: "100%" }}>
                     <Text style={styles.imageText}>Image Object to replace with</Text>
@@ -403,7 +407,9 @@ const Masking_EditScreen = ({ navigation }) => {
                         placeholder='Enter image object to change'
                         isValid={wrongInputData == '' ? true : false}
                         multiline={true}
-                        scrollEnabled={true} />
+                        scrollEnabled={true} 
+                        textAlign='left'
+                        textAlignVertical='top'/>
 
                 </View>
                 {wrongInputData != "" && <Text style={styles.errorText}>{wrongInputData}</Text>}
@@ -597,7 +603,7 @@ const styles = StyleSheet.create({
     overlayimage: {
         width: '100%',
         height: '100%',
-        position: 'absolute',
+        position: 'relative',
         top: 0,
         left: 0,
         //transform: [{ translateX: -50 }, { translateY: -50 }],
@@ -646,12 +652,13 @@ const styles = StyleSheet.create({
     },
     textInput: {
         width: '90%',
-        height: 60,
+        height: 100,
         borderWidth: 1,
         borderRadius: 10,
         marginTop: 20,
         alignSelf: 'center',
         color: 'black',
+        paddingLeft:20
     },
     modalView: {
         flex: 1,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, FlatList, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Image, FlatList, Text, StyleSheet, Modal, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Pinchable from 'react-native-pinchable'
 const DashboardScreen = () => {
@@ -52,8 +52,10 @@ const formatData = (data, numColumns) => {
 
 return (
     <View style={styles.container}>
+        <SafeAreaView>
         <FlatList
             data={formatData(imagePaths, 2)}
+            showsVerticalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
             renderItem={({ item }) => {
                 if (!item) {
@@ -84,6 +86,7 @@ return (
                 </TouchableOpacity>
             </View>
         </Modal>
+    </SafeAreaView>
     </View>
 );
 };

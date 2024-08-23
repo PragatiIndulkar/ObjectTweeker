@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, PermissionsAndroid, Image, TextInputComponent, TextInput, StatusBar, Dimensions, ScrollView, Modal, TouchableWithoutFeedback, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, PermissionsAndroid, Image, TextInputComponent, TextInput, StatusBar, Dimensions, ScrollView, Modal, TouchableWithoutFeedback, Alert, SafeAreaView } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import ButtonComponent from '../components/ButtonComponent'
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker'
@@ -80,47 +80,55 @@ const Home = ({ navigation }) => {
   };
 
   const callAPI = async () => {
-    setLoading(true)
-    setLoaderText("Applying Mask...")
-    if (!imageData) {
-      setError('No image selected');
-      return;
-    }
-    const { fileType, fileName } = getFileTypeAndName(imageData.assets[0].uri);
-    const formData = new FormData();
-    // const myHeaders = new Headers()
-    // myHeaders.append("Content-type", "multipart/form-data")
-    console.log('filename is', fileName)
-    formData.append('image',
-      {
-        uri: imageData.assets[0].uri,
-        type: mime.getType(imageData.assets[0].uri),
-        name: fileName
+    try{
+      setLoading(true)
+      setLoaderText("Applying Mask...")
+      if (!imageData) {
+        setError('No image selected');
+        return;
       }
-    );
-    formData.append('image_object', imageObjectData); // Assuming this is a string value
-    console.log(formData)
-    const res = await runAxiosAsync(axiosClient.post(MASKING_STEP, formData, {
-      headers: {
-        // 'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data',
-      },
-      responseType: 'arraybuffer'
-    }))
-    console.log("response is", res)
-    if (res != 400) {
-      const base64string = Buffer.from(res, 'binary').toString('base64')
-      const image = `data:image/jpeg;base64,${base64string}`
-      const imagePath = `${RNFS.DocumentDirectoryPath}/${new Date().getTime()}.jpg`;
-      await RNFS.writeFile(imagePath, base64string, 'base64');
-      setOutputImage(image)
-      setLoading(false)
-      navigation.navigate('Masking_EditScreen', { outputImagePath: imagePath, imageData: imageData })
+      const { fileType, fileName } = getFileTypeAndName(imageData.assets[0].uri);
+      const formData = new FormData();
+      // const myHeaders = new Headers()
+      // myHeaders.append("Content-type", "multipart/form-data")
+      console.log('filename is', fileName)
+      formData.append('image',
+        {
+          uri: imageData.assets[0].uri,
+          type: mime.getType(imageData.assets[0].uri),
+          name: fileName
+        }
+      );
+      formData.append('image_object', imageObjectData); // Assuming this is a string value
+      console.log(formData)
+      const res = await runAxiosAsync(axiosClient.post(MASKING_STEP, formData, {
+        headers: {
+          // 'Accept': 'application/json',
+          'Content-Type': 'multipart/form-data',
+        },
+        responseType: 'arraybuffer'
+      }))
+      console.log("response is", res)
+      if (res != 400) {
+        const base64string = Buffer.from(res, 'binary').toString('base64')
+        const image = `data:image/jpeg;base64,${base64string}`
+        const imagePath = `${RNFS.DocumentDirectoryPath}/${new Date().getTime()}.jpg`;
+        await RNFS.writeFile(imagePath, base64string, 'base64');
+        setOutputImage(image)
+        setLoading(false)
+        navigation.navigate('Masking_EditScreen', { outputImagePath: imagePath, imageData: imageData })
+      }
+      else {
+        setLoading(false)
+        Alert.alert("The AI is unable to detect the object you want to mask.")
+      }
     }
-    else {
+    catch(err){
       setLoading(false)
-      Alert.alert("The AI is unable to detect the object you want to mask.")
+      Alert.alert('Unable to fetch Response.');
+      //Alert.alert(err)
     }
+    
     //  dispatch(setImageUri(imagePath));
 
     // // const filePath = `${RNFS.DocumentDirectoryPath}/image.jpg`;
@@ -161,11 +169,13 @@ const Home = ({ navigation }) => {
     return isValid
   }
   return (
-    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={styles.main}>
+    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }} >
+      <SafeAreaView>
+      <View style={styles.main} >
         <StatusBar
           barStyle='dark-content'
           backgroundColor="transparent"
+          translucent={false}
         />
         <Text style={[styles.imageText, { marginBottom: 10 }]}>Select Image</Text>
         <View style={styles.uploadImage}>
@@ -205,7 +215,7 @@ const Home = ({ navigation }) => {
           style={styles.textInput}
             onChangeText={txt =>setImageObjectData(txt)}
             value={imageObjectData}
-            placeholder='Enter image name'
+            placeholder='Enter object to mask'
             placeholderTextColor={'gray'}
             isValid={wrongInput == '' ? true : false} 
         />
@@ -234,7 +244,7 @@ const Home = ({ navigation }) => {
               transparent={true}
               visible={modalVisibility}
               onRequestClose={() => {
-                Alert.alert('Modal has been closed.');
+                //Alert.alert('Modal has been closed.');
                 setModalVisibility(!modalVisibility);
               }
               }
@@ -261,6 +271,7 @@ const Home = ({ navigation }) => {
         )}
         <LoaderComponent visible={loading} loaderText={loaderText}/>
       </View>
+  </SafeAreaView>
     </ScrollView>
   )
 }
@@ -270,7 +281,7 @@ export default Home
 const styles = StyleSheet.create({
   main: {
     flex: 1,
-    backgroundColor: 'white'
+    backgroundColor: 'white',
   },
   imageText: {
     fontSize: 20,
@@ -359,7 +370,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignSelf: 'center',
     color: 'black',
-    backgroundColor: '#ededed'
+    backgroundColor: '#ededed',
+    padding:20
   },
   modalView: {
     flex: 1,

@@ -33,7 +33,7 @@ const HeaderRight = () => {
 const MainNavigator = () => {
   return (
     <ModalProvider>
-      <NavigationContainer>
+      <NavigationContainer >
         <stack.Navigator>
           <stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
           <stack.Screen name="MainScreen" component={MainScreen} options={{ headerShown: false }} />
