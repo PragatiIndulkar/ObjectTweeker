@@ -1,13 +1,51 @@
-import React, { useRef, useState } from "react";
-import { View, Text, Dimensions, Image, StatusBar, Animated, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, Dimensions, Image, StatusBar, Animated, TouchableOpacity, StyleSheet, Modal, TextInput } from "react-native";
 import { OnBoardingData } from "../utils/onboardingData";
 import LinearGradient from "react-native-linear-gradient";
+import { useModal } from "../utils/ModalContext";
+import PrompAPIEditComponent from "../components/PrompAPIEditComponent";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 //import Animated from "react-native-reanimated";
 export default function OnBoardingScreen({ navigation }) {
     const scrollx = useRef(new Animated.Value(0)).current;
     const [currentIndex, setCurrentIndex] = useState(0);
     const { width, height } = Dimensions.get('screen')
+    const [showBaseUrlSetup, setShowBaseUrlSetup] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const slideRef = useRef(null);
+    const [baseUrl, setBaseUrl] = useState('');
+    const [savedBaseUrl, setSavedBaseUrl] = useState(null);
+
+  // Retrieve the saved base URL from AsyncStorage on component mount
+//   useEffect(() => {
+//     const fetchBaseUrl = async () => {
+//       const url = await AsyncStorage.getItem('baseUrl');
+     
+//       if (url) {
+//         setSavedBaseUrl(url); // Set savedBaseUrl so it won't ask again
+//       }
+//     };
+//     fetchBaseUrl();
+//   }, []);
+
+  // Save the base URL to AsyncStorage
+  const saveBaseUrl = async () => {
+    if (baseUrl.trim()) {
+      await AsyncStorage.setItem('baseUrl', baseUrl);
+      setSavedBaseUrl(baseUrl); // Mark as saved
+      setModalVisible(false)
+    }
+  };
+
+    const openModal =()=>{
+        setModalVisible(true)
+    }
+
+     const closeModal =()=>{
+    //     saveBaseUrl()
+         setModalVisible(false)
+     }
+
     const onViewableItemsChanged = info => {
         console.log(info);
         setCurrentIndex(info.viewableItems[0].index);
@@ -23,6 +61,7 @@ export default function OnBoardingScreen({ navigation }) {
             </View>
         )
     }
+
     const Indicator = ({ scrollx }) => {
         return (
             <View style={{
@@ -83,10 +122,12 @@ export default function OnBoardingScreen({ navigation }) {
     }
     return (
         <View style={{ flex: 1, backgroundColor: "white" }}>
+            <TouchableOpacity onPress={()=>setModalVisible(true)}>
             <View style={styles.topLayer}>
                 {/* <Image style={styles.logo} source={require('../image/logo.png')} /> */}
                 <Text style={styles.title}>ObjectTweeker</Text>
             </View>
+            </TouchableOpacity>
             <Animated.FlatList
                 ref={slideRef}
                 data={OnBoardingData}
@@ -140,15 +181,43 @@ export default function OnBoardingScreen({ navigation }) {
                         </LinearGradient>
                     </View>
                 </View>
-
             </View>
+            {modalVisible && (
+            <View style={styles.modalView}>
+              <Modal
+                animationType='none'
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                  //Alert.alert('Modal has been closed.');
+                  setModalVisibility(!modalVisible);
+                }
+                }
+              >
+                <View style={styles.modalView}>
+                  <View style={styles.innerViewModal}>
+                  <TextInput
+              style={styles.textInput}
+              onChangeText={setBaseUrl}
+              //value={}
+              placeholder='Enter Base URL'
+              placeholderTextColor={'gray'}
+            />
+                    <TouchableOpacity style={[styles.buttonNew, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => saveBaseUrl()}>
+                      <Text style={{ marginLeft: 10, fontSize: 18, color: 'black', color: 'white', fontWeight: '500' }}>Save URL</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+            </View>
+          )}
         </View>
     )
 }
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: 'White'
+        backgroundColor: 'white'
     },
     topLayer: {
         marginTop: 10,
@@ -186,7 +255,59 @@ const styles = StyleSheet.create({
     btnText: {
         padding: 10,
         fontSize: 20,
-        color: '#fff',
+        color: '#ffff',
         fontWeight: '800'
-    }
+    },
+    modalView: {
+        flex: 1,
+        //width:'100%',
+        //backgroundColor: 'rgba(0,0,0,0.2)',
+        justifyContent: 'center',
+        alignSelf: 'center'
+      },
+      innerViewModal: {
+        alignSelf: 'center',
+        justifyContent: 'center',
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        padding: 10,
+        // height: 150,
+        backgroundColor: 'white',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderColor: 'gray',
+        borderWidth: 1,
+      },
+      buttonNew: {
+        width: "95%",
+        height: 55,
+        alignItems: 'center',
+        justifyContent: 'center',
+        //padding: 10,
+        marginTop: 10,
+        backgroundColor: '#08046c',
+        borderRadius: 10,
+        borderColor: '#ededed',
+        borderWidth: 1,
+        shadowColor: 'black',
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.5,
+        shadowRadius: 5,
+        elevation: 10,
+      },
+      textInput: {
+        width: '90%',
+        height: 60,
+        borderWidth: 1,
+        borderRadius: 10,
+        marginTop: 20,
+        alignSelf: 'center',
+        color: 'black',
+        backgroundColor: '#ededed',
+        padding: 20
+      },
 })

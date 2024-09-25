@@ -13,6 +13,7 @@ import { useRoute } from '@react-navigation/native'
 import EditOptionsComponent from '../components/EditOptionsComponent'
 import Entypo from 'react-native-vector-icons/Entypo'
 import ImageResizer from 'react-native-image-resizer';
+import { Client } from '@gradio/client'
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
@@ -23,7 +24,7 @@ const Home = ({ navigation }) => {
   const [outputImage, setOutputImage] = useState();
   const [imageObjectData, setImageObjectData] = useState('');
   const [loading, setLoading] = useState(false)
-  const [loaderText,setLoaderText] = useState('Fetching Response...')
+  const [loaderText, setLoaderText] = useState('Fetching Response...')
   const imageUri = useSelector(state => state.image.imageUri)
   const [wrongInput, setWrongInput] = useState('');
   const [wrongImageSelection, setWrongImageSelection] = useState('');
@@ -46,18 +47,18 @@ const Home = ({ navigation }) => {
   const openCamera = async () => {
     const res = await launchCamera({ mediaType: 'photo' });
     if (!res.didCancel) {
-        const rotatedImage = await ImageResizer.createResizedImage(
-            res.assets[0].uri,
-            res.assets[0].width,
-            res.assets[0].height,
-            'JPEG',
-            100,
-            0 // Rotate image by 0 degrees, which automatically corrects orientation
-        );
-        setImageData({ assets: [{ ...res.assets[0], uri: rotatedImage.uri }] });
+      const rotatedImage = await ImageResizer.createResizedImage(
+        res.assets[0].uri,
+        res.assets[0].width,
+        res.assets[0].height,
+        'JPEG',
+        100,
+        0 // Rotate image by 0 degrees, which automatically corrects orientation
+      );
+      setImageData({ assets: [{ ...res.assets[0], uri: rotatedImage.uri }] });
     }
     setModalVisibility(false);
-}
+  }
   const openGallery = async () => {
     const res = await launchImageLibrary({ mediaType: 'photo' })
     if (!res.didCancel) {
@@ -78,7 +79,7 @@ const Home = ({ navigation }) => {
     }
     return { fileType, fileName };
   };
-
+ 
   const callAPI = async () => {
     try{
       setLoading(true)
@@ -128,7 +129,7 @@ const Home = ({ navigation }) => {
       Alert.alert('Unable to fetch Response.');
       //Alert.alert(err)
     }
-    
+
     //  dispatch(setImageUri(imagePath));
 
     // // const filePath = `${RNFS.DocumentDirectoryPath}/image.jpg`;
@@ -171,34 +172,34 @@ const Home = ({ navigation }) => {
   return (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, backgroundColor: 'white' }} >
       <SafeAreaView>
-      <View style={styles.main} >
-        <StatusBar
-          barStyle='dark-content'
-          backgroundColor="transparent"
-          translucent={false}
-        />
-        <Text style={[styles.imageText, { marginBottom: 10 }]}>Select Image</Text>
-        <View style={styles.uploadImage}>
-          {imageData == null &&
-            (
-              <View style={styles.UploadImageView}>
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 200, height: 50 }} onPress={() => openModal()}>
-                  <Image style={{ width: 30, height: 30, tintColor: 'gray' }} source={require('../image/upload.png')} />
-                  <Text style={{ fontSize: 20, marginLeft: 10, color: 'gray', }}>Upload Image</Text>
-                </TouchableOpacity>
-              </View>
-            )
-          }
-          {imageData != null &&
-            (
-              <TouchableWithoutFeedback onPress={() => openModal()}>
+        <View style={styles.main} >
+          <StatusBar
+            barStyle='dark-content'
+            backgroundColor="transparent"
+            translucent={false}
+          />
+          <Text style={[styles.imageText, { marginBottom: 10 }]}>Select Image</Text>
+          <View style={styles.uploadImage}>
+            {imageData == null &&
+              (
+                <View style={styles.UploadImageView}>
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 200, height: 50 }} onPress={() => openModal()}>
+                    <Image style={{ width: 30, height: 30, tintColor: 'gray' }} source={require('../image/upload.png')} />
+                    <Text style={{ fontSize: 20, marginLeft: 10, color: 'gray', }}>Upload Image</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            }
+            {imageData != null &&
+              (
+                <TouchableWithoutFeedback onPress={() => openModal()}>
 
-                <Image style={styles.selectedImage} source={{ uri: imageData.assets[0].uri }} />
-              </TouchableWithoutFeedback>
-            )
-          }
-        </View>
-        {/* <View style={styles.innerView}>
+                  <Image style={styles.selectedImage} source={{ uri: imageData.assets[0].uri }} />
+                </TouchableWithoutFeedback>
+              )
+            }
+          </View>
+          {/* <View style={styles.innerView}>
         <TouchableOpacity style={styles.button} onPress={() => openCamera()}>
           <Image style={styles.icon} source={require("../image/camera.png")} />
           <Text>Open Camera</Text>
@@ -208,70 +209,68 @@ const Home = ({ navigation }) => {
           <Text>Open Gallery</Text>
         </TouchableOpacity>
       </View> */}
-        {wrongImageSelection != "" && <Text style={styles.errorText}>{wrongImageSelection}</Text>}
-        {!isDrawTrue && <View>
-          <Text style={[styles.imageText, { marginTop: 20 }]}>Specify Object</Text>
-          <TextInput
-          style={styles.textInput}
-            onChangeText={txt =>setImageObjectData(txt)}
-            value={imageObjectData}
-            placeholder='Enter object to mask'
-            placeholderTextColor={'gray'}
-            isValid={wrongInput == '' ? true : false} 
-        />
-           
-          {wrongInput != "" && <Text style={styles.errorText}>{wrongInput}</Text>}
-        </View>}
-        {isDrawTrue && imageData != null &&
-          <EditOptionsComponent />
-        }
-        <ButtonComponent name='Apply Mask' OnPress={() => {
-          if (validateInput()) {
-            callAPI()
+          {wrongImageSelection != "" && <Text style={styles.errorText}>{wrongImageSelection}</Text>}
+          {!isDrawTrue && <View>
+            <Text style={[styles.imageText, { marginTop: 20 }]}>Specify Object</Text>
+            <TextInput
+              style={styles.textInput}
+              onChangeText={txt => setImageObjectData(txt)}
+              value={imageObjectData}
+              placeholder='Enter object to mask'
+              placeholderTextColor={'gray'}
+              isValid={wrongInput == '' ? true : false}
+            />
+
+            {wrongInput != "" && <Text style={styles.errorText}>{wrongInput}</Text>}
+          </View>}
+          {isDrawTrue && imageData != null &&
+            <EditOptionsComponent />
           }
-        }}
-        />
-        {/* {outputImage &&
+          <ButtonComponent name='Apply Mask' OnPress={() => {
+            if (validateInput()) {
+              callAPI()
+            }
+          }}
+          />
+          {/* {outputImage &&
         (
           <View style={styles.selectedImageView}>
             <Image style={styles.selectedImage} source={{ uri:outputImage }} />
           </View>)
       } */}
-        {modalVisibility && (
-          <View style={styles.modalView}>
-            <Modal
-              animationType='none'
-              transparent={true}
-              visible={modalVisibility}
-              onRequestClose={() => {
-                //Alert.alert('Modal has been closed.');
-                setModalVisibility(!modalVisibility);
-              }
-              }
-            >
-              <View style={styles.modalView}>
-                <View style={styles.innerViewModal}>
-                  <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => openCamera()}>
-                    <Image style={styles.icon} source={require("../image/camera.png")} />
-                    <Text style={{ marginLeft: 10, color: 'black', color: '#08046c', fontWeight: '500' }}>Open Camera</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => openGallery()}>
-                    <Image style={styles.icon} source={require("../image/image.png")} />
-                    <Text style={{ marginLeft: 10, color: 'black', color: '#08046c', fontWeight: '500' }}>Open Gallery</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => closeModal()}>
-                    <Text style={{ marginLeft: 10, fontSize: 18, color: 'black', color: '#08046c', fontWeight: '500' }}>Cancel</Text>
-                  </TouchableOpacity>
+          {modalVisibility && (
+            <View style={styles.modalView}>
+              <Modal
+                animationType='none'
+                transparent={true}
+                visible={modalVisibility}
+                onRequestClose={() => {
+                  //Alert.alert('Modal has been closed.');
+                  setModalVisibility(!modalVisibility);
+                }
+                }
+              >
+                <View style={styles.modalView}>
+                  <View style={styles.innerViewModal}>
+                    <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => openCamera()}>
+                      <Image style={styles.icon} source={require("../image/camera.png")} />
+                      <Text style={{ marginLeft: 10, color: 'black', color: '#08046c', fontWeight: '500' }}>Open Camera</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => openGallery()}>
+                      <Image style={styles.icon} source={require("../image/image.png")} />
+                      <Text style={{ marginLeft: 10, color: 'black', color: '#08046c', fontWeight: '500' }}>Open Gallery</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, { flexDirection: 'row', alignSelf: 'center' }]} onPress={() => closeModal()}>
+                      <Text style={{ marginLeft: 10, fontSize: 18, color: 'black', color: '#08046c', fontWeight: '500' }}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-
-            </Modal>
-
-          </View>
-        )}
-        <LoaderComponent visible={loading} loaderText={loaderText}/>
-      </View>
-  </SafeAreaView>
+              </Modal>
+            </View>
+          )}
+          <LoaderComponent visible={loading} loaderText={loaderText} />
+        </View>
+      </SafeAreaView>
     </ScrollView>
   )
 }
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     color: 'black',
     backgroundColor: '#ededed',
-    padding:20
+    padding: 20
   },
   modalView: {
     flex: 1,

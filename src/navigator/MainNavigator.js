@@ -38,11 +38,11 @@ const MainNavigator = () => {
           <stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
           <stack.Screen name="MainScreen" component={MainScreen} options={{ headerShown: false }} />
           <stack.Screen name="OptionSelectionScreen" component={OptionSelectionScreen} options={{
-              title: 'ObjectTweeker',
-              headerTintColor: "#08046c",
-              headerRight: () => <HeaderRight />
-            }}/>
-            <stack.Screen name="EditOptionsComponent" component={EditOptionsComponent} options={{ headerShown: false }}/>
+            title: 'ObjectTweeker',
+            headerTintColor: "#08046c",
+            headerRight: () => <HeaderRight />
+          }} />
+          <stack.Screen name="EditOptionsComponent" component={EditOptionsComponent} options={{ headerShown: false }} />
           <stack.Screen name="Home" component={Home}
             options={{
               title: '',
@@ -55,11 +55,11 @@ const MainNavigator = () => {
               headerTintColor: "#08046c",
               headerRight: () => <HeaderRight />
             }} />
-             <stack.Screen name="ProfileScreen" component={ProfileScreen} options={{title:'',headerTintColor: "#08046c",  headerRight: () => <HeaderRight /> }} />
-             <stack.Screen name="SettingsScreen" component={SettingsScreen} options={{title:'',headerTintColor: "#08046c",  headerRight: () => <HeaderRight /> }} />
-             <stack.Screen name="DashboardScreen" component={DashboardScreen} options={{title:'',headerTintColor: "#08046c",  headerRight: () => <HeaderRight /> }} />
+          <stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: '', headerTintColor: "#08046c", headerRight: () => <HeaderRight /> }} />
+          <stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: '', headerTintColor: "#08046c", headerRight: () => <HeaderRight /> }} />
+          <stack.Screen name="DashboardScreen" component={DashboardScreen} options={{ title: '', headerTintColor: "#08046c", headerRight: () => <HeaderRight /> }} />
         </stack.Navigator>
-      <OptionModalComponent/>
+        <OptionModalComponent />
       </NavigationContainer>
     </ModalProvider>
   )

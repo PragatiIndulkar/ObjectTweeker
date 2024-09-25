@@ -2,7 +2,7 @@ import { Dimensions, Image, Modal, ScrollView, StatusBar, StyleSheet, Permission
 import React, { useEffect, useState, Component, useRef } from 'react'
 import { useRoute } from '@react-navigation/native'
 import ButtonComponent from '../components/ButtonComponent'
-import { ENHANCE_PRMOPT_URL, MASKING_EDITING_URL, MASKING_STEP, axiosClient, axiosClientEnhancePrompt } from '../utils/String'
+import { ENHANCE_PRMOPT_URL, ERASE_OBJECT, MASKING_EDITING_URL, MASKING_STEP, axiosClient, axiosClientEnhancePrompt } from '../utils/String'
 import { Buffer } from 'buffer'
 import mime from 'mime'
 import { runAxiosAsync } from '../utils/helper'
@@ -144,12 +144,12 @@ const Masking_EditScreen = ({ navigation }) => {
             setError('No image selected');
             return;
         }
-        const { fileType, fileNameInput } = getFileTypeAndName(imageData.assets[0].uri);
-        console.log(imageData.assets[0].uri)
-        const { fileTypeoutput, fileNameOutput } = getFileTypeAndName(outputImagePath);
-        console.log(fileNameInput)
-        console.log(fileNameOutput)
-        console.log(mime.getType(imageData.assets[0].uri))
+        // const { fileType, fileNameInput } = getFileTypeAndName(imageData.assets[0].uri);
+        // console.log(imageData.assets[0].uri)
+        // const { fileTypeoutput, fileNameOutput } = getFileTypeAndName(outputImagePath);
+        // console.log(fileNameInput)
+        // console.log(fileNameOutput)
+        console.log("type is ",mime.getType(imageData.assets[0].uri))
         console.log(mime.getType(outputImagePath))
         const formData = new FormData();
         formData.append('image',
@@ -209,7 +209,79 @@ const Masking_EditScreen = ({ navigation }) => {
         //   });
 
     };
+    const callEraseObjectAPI= async () => {
+        setLoading(true)
+        setLoaderText('Removing Object...')
+        setApiCalled(true)
+        if (!imageData) {
+            setError('No image selected');
+            return;
+        }
+        const { fileType, fileNameInput } = getFileTypeAndName(imageData.assets[0].uri);
+        console.log(imageData.assets[0].uri)
+        const { fileTypeoutput, fileNameOutput } = getFileTypeAndName(outputImagePath);
+        console.log(fileNameInput)
+        console.log(fileNameOutput)
+        console.log(mime.getType(imageData.assets[0].uri))
+        console.log(mime.getType(outputImagePath))
+        const formData = new FormData();
+        formData.append('image',
+            {
+                uri: imageData.assets[0].uri,
+                type: mime.getType(imageData.assets[0].uri),
+                name: 'image.jpg'
+            }
+        );
+        formData.append('image2',
+            {
+                uri: `file://${outputImagePath}`,
+                type: mime.getType(outputImagePath),
+                name: 'image.jpg'
+            }
+        );
+       // formData.append('image_prompt', objectDataToChangeWith); // Assuming this is a string value
+        console.log(formData)
+        const EraseObject = `${ERASE_OBJECT}?strength=${strength}&guidance_scale=${guidance_Scale}&num_inference_steps=${inferenace_scale}`;
+        const response = await runAxiosAsync(axiosClient.post(EraseObject, formData, {
+            headers: {
+                //'Accept': 'application/json',
+                'Content-Type': 'multipart/form-data',
+            },
+            responseType: 'arraybuffer'
+        }))
+        console.log("response is", response)
+        const base64string = Buffer.from(response, 'binary').toString('base64')
+        console.log("base64string is", base64string)
 
+        setOutputBase64(base64string)
+        const image = `data:image/jpeg;base64,${base64string}`
+        // const imagePath = `${RNFS.DownloadDirectoryPath}/${new Date().getTime()}.jpg`;
+        // await RNFS.writeFile(imagePath, base64string, 'base64');
+        // Alert.alert('image saved')
+        //  dispatch(setImageUri(imagePath));
+
+        // // const filePath = `${RNFS.DocumentDirectoryPath}/image.jpg`;
+        // const filePath = `${RNFS.DocumentDirectoryPath}/${new Date().getTime()}.jpg`;
+        // await RNFS.downloadFile({ fromUrl: imagePath, toFile: filePath }).promise;
+        // // Save the file to gallery
+        // await CameraRoll.save(filePath, { type: 'photo' });
+        //  console.log('Image saved to:', { outputImagePath:imagePath},{inputImagePath:imageData.assets[0].uri});
+
+        setOutputImage(image)
+        setLoading(false)
+        setModalVisibility(true)
+        //navigation.navigate('Masking_EditScreen',{outputImagePath:imagePath, imageData:imageData})
+        // .then(response => {
+        //   const blob = new Blob([response.data], { type: fileType });
+        //   const imgURL = URL.createObjectURL(blob);
+        //   setImageURL(imgURL);
+        // })
+        //   .catch(err => {
+        //     setError(err.message);
+        //     console.error('Fetch Error:', err);
+        //   });
+
+    };
     // const requestStoragePermission = async () => {
     //     console.log(Platform.OS)
     //     if (Platform.OS === 'android') {
@@ -492,14 +564,19 @@ const Masking_EditScreen = ({ navigation }) => {
                             callEnhancePromptAPI()
                         }
                     }}>
-                        <Text style={{ color: '#08046c', fontSize: 17, fontWeight: '600' }}>Enhance Prompt</Text>
+                        <Text style={{ color: '#08046c', fontSize: 15, fontWeight: '600' }}>EnhancePrompt</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.buttonStyle, { marginRight: 10, backgroundColor: '#4600a3', borderColor: 'gray' }]} onPress={() => {
+                    <TouchableOpacity style={[styles.buttonStyle, {  backgroundColor: '#4600a3', borderColor: 'gray' }]} onPress={() => {
                         if (validate()) {
                             callMaskEditAPI()
                         }
                     }}>
-                        <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Replace</Text>
+                        <Text style={{ color: 'white', fontSize: 15, fontWeight: '600' }}>ReplaceObject</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.buttonStyle, { marginRight: 10, backgroundColor: '#ededed', borderColor: 'gray' }]} onPress={() => {
+                        callEraseObjectAPI()
+                    }}>
+                        <Text style={{ color: '#08046c', fontSize: 15, fontWeight: '600' }}>RemoveObject</Text>
                     </TouchableOpacity>
                 </View>
                 {/* <ButtonComponent name='Apply Replacement' OnPress={() => {
@@ -742,7 +819,7 @@ const styles = StyleSheet.create({
     },
     buttonStyle:
     {
-        width: "45%",
+        width: "30%",
         height: 50,
         alignItems: 'center',
         justifyContent: 'center',
