@@ -3,7 +3,6 @@ import { View, Text, Dimensions, Image, StatusBar, Animated, TouchableOpacity, S
 import { OnBoardingData } from "../utils/onboardingData";
 import LinearGradient from "react-native-linear-gradient";
 import { useModal } from "../utils/ModalContext";
-import PrompAPIEditComponent from "../components/PrompAPIEditComponent";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 //import Animated from "react-native-reanimated";
 export default function OnBoardingScreen({ navigation }) {
@@ -122,12 +121,12 @@ export default function OnBoardingScreen({ navigation }) {
     }
     return (
         <View style={{ flex: 1, backgroundColor: "white" }}>
-            <TouchableOpacity onPress={()=>setModalVisible(true)}>
             <View style={styles.topLayer}>
+            <TouchableOpacity onPress={()=>setModalVisible(true)}>
                 {/* <Image style={styles.logo} source={require('../image/logo.png')} /> */}
                 <Text style={styles.title}>ObjectTweeker</Text>
-            </View>
             </TouchableOpacity>
+            </View>
             <Animated.FlatList
                 ref={slideRef}
                 data={OnBoardingData}
@@ -298,6 +297,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 5,
         elevation: 10,
+        
       },
       textInput: {
         width: '90%',
